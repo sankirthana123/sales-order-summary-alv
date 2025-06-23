@@ -25,7 +25,7 @@ This project contains an SAP ABAP ALV report (`ZSA_ALV_REPORT_PROJECT`) to displ
 ![Filter on sales document](FILTER_ON_SALES_DOCUMENT.PNG)
 
 Download the sample ALV Excel output:  
-[sales_order_summary_output.xlsx](ALV_GRID_PROJECT.xlsx)
+[ALV_GRID_PROJECT.xlsx](ALV_GRID_PROJECT.xlsx)
 
 
 AUTHOR:
