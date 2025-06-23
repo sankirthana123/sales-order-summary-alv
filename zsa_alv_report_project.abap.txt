@@ -1,0 +1,116 @@
+REPORT ZSA_ALV_REPORT_PROJECT.
+
+TABLES : VBAK, VBAP.
+
+DATA : LV_RESULT TYPE VBELN_VA.
+
+SELECT-OPTIONS : S_VBELN FOR LV_RESULT.
+
+TYPES : BEGIN OF TY_DATA,
+  VBELN TYPE VBAK-VBELN,
+  WAERK TYPE VBAK-WAERK,
+  END OF TY_DATA.
+
+DATA : LT_DATA1 TYPE TABLE OF TY_DATA,
+      LS_DATA1 TYPE TY_DATA.
+
+TYPES : BEGIN OF TY_DATA1,
+  VBELN TYPE VBAP-VBELN,
+  MATNR TYPE VBAP-MATNR,
+  KWMENG TYPE VBAP-KWMENG,
+  END OF TY_DATA1.
+
+DATA : LT_DATA2 TYPE TABLE OF TY_DATA1,
+      LS_DATA2 TYPE TY_DATA1.
+
+DATA : LT_FINAL TYPE TABLE OF ZSA_VBAK_VBAP_PROJECT,
+      LS_FINAL TYPE ZSA_VBAK_VBAP_PROJECT,
+      LT_FIELDCAT TYPE SLIS_T_FIELDCAT_ALV,
+      LT_SORT      TYPE  SLIS_T_SORTINFO_ALV,
+*      (Internal Table) Purpose: Tells ALV how to sort, group, and subtotal the data.
+      LS_FIELDCAT  TYPE  SLIS_FIELDCAT_ALV,
+*      Describes one column in your ALV output
+      LS_SORT     TYPE SLIS_SORTINFO_ALV,
+*      A single entry for sorting/grouping.
+      LS_LAYOUT    TYPE SLIS_LAYOUT_ALV.
+*      Controls overall appearance/behavior of ALV.
+
+SELECT VBELN WAERK FROM VBAK INTO TABLE LT_DATA1
+WHERE VBELN IN S_VBELN.
+
+IF LT_DATA1 IS NOT INITIAL.
+  SELECT VBELN MATNR KWMENG FROM VBAP INTO TABLE LT_DATA2
+    FOR ALL ENTRIES IN LT_DATA1 WHERE VBELN = LT_DATA1-VBELN.
+
+
+  LOOP AT LT_DATA1 INTO LS_DATA1.
+    LOOP AT LT_DATA2 INTO LS_DATA2 WHERE VBELN = LS_DATA1-VBELN.
+      LS_FINAL-VBELN  = LS_DATA1-VBELN.
+      LS_FINAL-WAERK  = LS_DATA1-WAERK.
+      LS_FINAL-MATNR  = LS_DATA2-MATNR.
+      LS_FINAL-KWMENG = LS_DATA2-KWMENG.
+      APPEND LS_FINAL TO LT_FINAL.
+      CLEAR LS_FINAL.
+    ENDLOOP.
+  ENDLOOP.
+ENDIF.
+
+IF LT_FINAL IS INITIAL.
+  MESSAGE 'No data found for the selected Sales Documents.' TYPE 'I'.
+  EXIT.
+ENDIF.
+
+CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+  EXPORTING
+    I_STRUCTURE_NAME       = 'ZSA_VBAK_VBAP_PROJECT'
+  CHANGING
+    CT_FIELDCAT            = LT_FIELDCAT
+  EXCEPTIONS
+    INCONSISTENT_INTERFACE = 1
+    PROGRAM_ERROR          = 2
+    OTHERS                 = 3.
+
+IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+*going through the field catalog (lt_fieldcat) Looking for the field called KWMENG (Quantity)
+*Telling ALV: “Please add a total for this column at the bottom”.
+LOOP AT LT_FIELDCAT INTO LS_FIELDCAT.
+  IF LS_FIELDCAT-FIELDNAME = 'KWMENG'. " Quantity field
+    LS_FIELDCAT-DO_SUM = 'X'.          " Enable totals
+  ENDIF.
+   " Remove header from the first field (VBELN) so ALV uses TOTALS_TEXT
+  MODIFY LT_FIELDCAT FROM LS_FIELDCAT.
+ENDLOOP.
+
+*Defining how to sort and group the ALV Grouping is done using VBELN (Sales Document Number)
+*Subtotals will appear for each group of VBELN.
+
+CLEAR LS_SORT.
+LS_SORT-FIELDNAME = 'VBELN'.     " Group by sales order
+LS_SORT-UP       = 'X'.
+LS_SORT-SUBTOT    = 'X'.         " Enable subtotals
+APPEND LS_SORT TO LT_SORT.
+
+* improving the visual layout Making columns automatically adjust to content
+*Adding a label "Total:" where totals are shown
+LS_LAYOUT-COLWIDTH_OPTIMIZE = 'X'.
+LS_LAYOUT-TOTALS_TEXT = 'TOTAL:'.
+
+
+CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+  EXPORTING
+   IS_LAYOUT     = LS_LAYOUT
+   IT_FIELDCAT   = LT_FIELDCAT
+   IT_SORT       = LT_SORT
+   I_SAVE        = 'A'
+  TABLES
+    T_OUTTAB      = LT_FINAL
+  EXCEPTIONS
+    PROGRAM_ERROR = 1
+    OTHERS        = 2.
+
+IF SY-SUBRC <> 0.
+  MESSAGE 'ALV display failed.' TYPE 'E'.
+ENDIF.
