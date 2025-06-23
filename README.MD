@@ -25,7 +25,7 @@ This project contains an SAP ABAP ALV report (`ZSA_ALV_REPORT_PROJECT`) to displ
 ![ALV Output](ALV_SALES_ORDER_SUMMARY_OUTPUT.PNG)
 
 2. Filtered Sales Orders
-![Filtered Sales Orders](FILTER_ON_SALES_DOCUMENT.PNG)
+![Filter on sales document](FILTER_ON_SALES_DOCUMENT.PNG)
 
 AUTHOR:
 SANKIRTHANA VINDYALA
