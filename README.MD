@@ -3,10 +3,9 @@
 This project contains an SAP ABAP ALV report (`ZSA_ALV_REPORT_PROJECT`) to display summarized sales order data.
 
  Features
-- ALV Grid Display using `CL_GUI_ALV_GRID`
-- Filters for Sales Org, Customer, and Date Range
-- Total Sales Order Value Calculation
-- Sort and Filter Enabled in ALV Output
+- Displayed sales order headers and item details based on user input
+- Displayed data using REUSE_ALV_GRID_DISPLAY with sorting, subtotals and auto column width
+- Implemented error handling for no data and alv display issues
 
  Requirements
 - SAP NetWeaver system
